@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}My Interviews — TalentFlow ATS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">My Interviews</h1>
+            <p class="mt-1 text-sm text-gray-500">Your assigned interviews and feedback status</p>
+        </div>
+        <div class="mt-4 sm:mt-0 flex items-center space-x-3">
+            <span class="inline-flex items-center rounded-full bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-800 border border-yellow-200">
+                <svg class="mr-1.5 h-3.5 w-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                </svg>
+                {{ pending_feedback_count }} Pending Feedback
+            </span>
+            <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800 border border-blue-200">
+                <svg class="mr-1.5 h-3.5 w-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+                {{ total }} Total Interviews
+            </span>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8" aria-label="Interview filters">
+            <a href="?filter=all"
+               class="{% if filter == 'all' or not filter %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors duration-150">
+                All
+            </a>
+            <a href="?filter=upcoming"
+               class="{% if filter == 'upcoming' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors duration-150">
+                Upcoming
+            </a>
+            <a href="?filter=pending_feedback"
+               class="{% if filter == 'pending_feedback' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors duration-150 flex items-center">
+                Pending Feedback
+                {% if pending_feedback_count > 0 %}
+                <span class="ml-2 inline-flex items-center justify-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                    {{ pending_feedback_count }}
+                </span>
+                {% endif %}
+            </a>
+            <a href="?filter=completed"
+               class="{% if filter == 'completed' %}border-primary-500 text-primary-600{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %} whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium transition-colors duration-150">
+                Completed
+            </a>
+        </nav>
+    </div>
+
+    {% if interviews and interviews|length > 0 %}
+    <!-- Interviews List -->
+    <div class="space-y-4">
+        {% for interview in interviews %}
+        <div class="bg-white shadow-sm rounded-lg border {% if interview.needs_feedback %}border-yellow-300 ring-1 ring-yellow-200{% else %}border-gray-200{% endif %} overflow-hidden">
+            <div class="p-5">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-3">
+                            <h3 class="text-base font-semibold text-gray-900 truncate">
+                                {% if interview.candidate_name %}{{ interview.candidate_name }}{% else %}Candidate{% endif %}
+                            </h3>
+                            <!-- Interview Type Badge -->
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                                {% if interview.interview_type == 'phone_screen' %}bg-purple-100 text-purple-700
+                                {% elif interview.interview_type == 'technical' %}bg-blue-100 text-blue-700
+                                {% elif interview.interview_type == 'behavioral' %}bg-green-100 text-green-700
+                                {% elif interview.interview_type == 'panel' %}bg-indigo-100 text-indigo-700
+                                {% elif interview.interview_type == 'onsite' %}bg-orange-100 text-orange-700
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ interview.interview_type | replace('_', ' ') | title }}
+                            </span>
+                            <!-- Status Badge -->
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
+                                {% if interview.status == 'Scheduled' %}bg-blue-50 text-blue-700
+                                {% elif interview.status == 'Completed' %}bg-green-50 text-green-700
+                                {% elif interview.status == 'Cancelled' %}bg-red-50 text-red-700
+                                {% else %}bg-gray-50 text-gray-700{% endif %}">
+                                {{ interview.status }}
+                            </span>
+                        </div>
+
+                        {% if interview.job_title %}
+                        <p class="mt-1 text-sm text-gray-600">
+                            <svg class="inline-block h-4 w-4 text-gray-400 mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
+                            {{ interview.job_title }}
+                        </p>
+                        {% endif %}
+
+                        <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-gray-500">
+                            <!-- Date & Time -->
+                            <div class="flex items-center">
+                                <svg class="mr-1.5 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                                </svg>
+                                {{ interview.scheduled_at.strftime('%b %d, %Y') }}
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="mr-1.5 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {{ interview.scheduled_at.strftime('%I:%M %p') }}
+                            </div>
+                            <!-- Duration -->
+                            <div class="flex items-center">
+                                <svg class="mr-1.5 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                                </svg>
+                                {{ interview.duration_minutes }} min
+                            </div>
+                            <!-- Location -->
+                            {% if interview.location %}
+                            <div class="flex items-center">
+                                <svg class="mr-1.5 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                                </svg>
+                                {{ interview.location }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {% if interview.notes %}
+                        <div class="mt-3">
+                            <p class="text-sm text-gray-500 line-clamp-2">
+                                <span class="font-medium text-gray-600">Notes:</span> {{ interview.notes }}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Area -->
+                    <div class="ml-4 flex-shrink-0 flex flex-col items-end space-y-2">
+                        {% if interview.needs_feedback %}
+                        <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+                            <svg class="mr-1 h-3.5 w-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                            </svg>
+                            Feedback Required
+                        </span>
+                        <a href="/interviews/{{ interview.id }}/feedback"
+                           class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 transition-colors duration-150">
+                            <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                            </svg>
+                            Submit Feedback
+                        </a>
+                        {% elif interview.has_feedback %}
+                        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                            <svg class="mr-1 h-3.5 w-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                            </svg>
+                            Feedback Submitted
+                        </span>
+                        {% if interview.feedback_rating %}
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-gray-500">Rating:</span>
+                            <div class="star-rating">
+                                {% for i in range(1, 6) %}
+                                <svg class="h-4 w-4 star {% if i <= interview.feedback_rating %}filled{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <a href="/interviews/{{ interview.id }}"
+                           class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors duration-150">
+                            View Details
+                        </a>
+                        {% else %}
+                        <a href="/interviews/{{ interview.id }}"
+                           class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors duration-150">
+                            View Details
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {% if interview.needs_feedback %}
+            <div class="bg-yellow-50 border-t border-yellow-200 px-5 py-3">
+                <div class="flex items-center">
+                    <svg class="h-4 w-4 text-yellow-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+                    </svg>
+                    <p class="text-xs text-yellow-700">
+                        This interview has been completed but is still awaiting your feedback. Please submit your evaluation as soon as possible.
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <nav class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 rounded-lg shadow-sm sm:px-6" aria-label="Pagination">
+        <div class="hidden sm:block">
+            <p class="text-sm text-gray-700">
+                Showing page <span class="font-medium">{{ page }}</span> of <span class="font-medium">{{ total_pages }}</span>
+                (<span class="font-medium">{{ total }}</span> total interviews)
+            </p>
+        </div>
+        <div class="flex flex-1 justify-between sm:justify-end space-x-3">
+            {% if page > 1 %}
+            <a href="?page={{ page - 1 }}{% if filter %}&filter={{ filter }}{% endif %}"
+               class="relative inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors duration-150">
+                Previous
+            </a>
+            {% endif %}
+            {% if page < total_pages %}
+            <a href="?page={{ page + 1 }}{% if filter %}&filter={{ filter }}{% endif %}"
+               class="relative inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition-colors duration-150">
+                Next
+            </a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-16 bg-white rounded-lg shadow-sm border border-gray-200">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+        </svg>
+        <h3 class="mt-4 text-sm font-semibold text-gray-900">No interviews found</h3>
+        <p class="mt-2 text-sm text-gray-500">
+            {% if filter == 'pending_feedback' %}
+                You have no interviews awaiting feedback. Great job staying on top of your evaluations!
+            {% elif filter == 'upcoming' %}
+                You have no upcoming interviews scheduled at this time.
+            {% elif filter == 'completed' %}
+                You have no completed interviews yet.
+            {% else %}
+                You don't have any interviews assigned to you yet. Check back later.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

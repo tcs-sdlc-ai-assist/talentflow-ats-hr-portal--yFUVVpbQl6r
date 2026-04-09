@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Feedback — TalentFlow ATS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="/interviews" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-primary-600">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 9v9.75" />
+                    </svg>
+                    Interviews
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" fill="none" viewBox="0 0 6 10">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                    </svg>
+                    <span class="ml-1 text-sm font-medium text-gray-700 md:ml-2">Submit Feedback</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Interview & Application Context -->
+    <div class="lg:col-span-1 space-y-6">
+        <!-- Interview Details Card -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">Interview Details</h3>
+            </div>
+            <div class="px-4 py-5 sm:px-6 space-y-4">
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Type</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ interview.interview_type }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Scheduled At</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ interview.scheduled_at.strftime('%B %d, %Y at %I:%M %p') if interview.scheduled_at else 'N/A' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Duration</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ interview.duration_minutes }} minutes</dd>
+                </div>
+                {% if interview.location %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Location</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ interview.location }}</dd>
+                </div>
+                {% endif %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</dt>
+                    <dd class="mt-1">
+                        <span class="status-badge {% if interview.status == 'Scheduled' %}status-badge-open{% elif interview.status == 'Completed' %}status-badge-active{% elif interview.status == 'Cancelled' %}status-badge-closed{% else %}status-badge-draft{% endif %}">
+                            {{ interview.status }}
+                        </span>
+                    </dd>
+                </div>
+                {% if interview.notes %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Notes</dt>
+                    <dd class="mt-1 text-sm text-gray-700">{{ interview.notes }}</dd>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Application Context Card -->
+        {% if application %}
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">Application Context</h3>
+            </div>
+            <div class="px-4 py-5 sm:px-6 space-y-4">
+                {% if candidate %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Candidate</dt>
+                    <dd class="mt-1 flex items-center space-x-2">
+                        <div class="avatar avatar-sm bg-primary-100 text-primary-700">
+                            {{ candidate.first_name[0] }}{{ candidate.last_name[0] }}
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">{{ candidate.first_name }} {{ candidate.last_name }}</span>
+                    </dd>
+                </div>
+                {% if candidate.email %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ candidate.email }}</dd>
+                </div>
+                {% endif %}
+                {% if candidate.headline %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Headline</dt>
+                    <dd class="mt-1 text-sm text-gray-700">{{ candidate.headline }}</dd>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if job %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Job Position</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ job.title }}</dd>
+                </div>
+                {% if job.department %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Department</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ job.department }}</dd>
+                </div>
+                {% endif %}
+                {% endif %}
+                <div>
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Application Status</dt>
+                    <dd class="mt-1">
+                        <span class="status-badge {% if application.status == 'Interview' %}status-badge-open{% elif application.status == 'Hired' %}status-badge-active{% elif application.status == 'Rejected' %}status-badge-closed{% else %}status-badge-draft{% endif %}">
+                            {{ application.status }}
+                        </span>
+                    </dd>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Feedback Form -->
+    <div class="lg:col-span-2">
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    {% if existing_feedback %}Edit Interview Feedback{% else %}Submit Interview Feedback{% endif %}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {% if existing_feedback %}
+                    Update your feedback for this interview.
+                    {% else %}
+                    Provide your assessment of the candidate's performance during this interview.
+                    {% endif %}
+                </p>
+            </div>
+
+            <form method="POST" action="/interviews/{{ interview.id }}/feedback" class="px-4 py-5 sm:px-6 space-y-6">
+                <!-- Rating -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Overall Rating <span class="text-red-500">*</span>
+                    </label>
+                    <div class="flex items-center space-x-1" id="rating-container">
+                        {% for i in range(1, 6) %}
+                        <label class="cursor-pointer">
+                            <input type="radio" name="rating" value="{{ i }}" class="sr-only peer"
+                                {% if existing_feedback and existing_feedback.rating == i %}checked{% endif %}
+                                required>
+                            <div class="w-10 h-10 flex items-center justify-center rounded-lg border-2 border-gray-200 text-gray-400 font-semibold text-sm transition-all duration-150 peer-checked:border-primary-500 peer-checked:bg-primary-50 peer-checked:text-primary-700 hover:border-primary-300 hover:text-primary-500">
+                                {{ i }}
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-2 flex justify-between text-xs text-gray-400 px-1" style="max-width: 230px;">
+                        <span>Poor</span>
+                        <span>Average</span>
+                        <span>Excellent</span>
+                    </div>
+                    {% if errors and errors.rating %}
+                    <p class="mt-1 text-sm text-red-600">{{ errors.rating }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Recommendation -->
+                <div>
+                    <label for="recommendation" class="block text-sm font-medium text-gray-700 mb-1">
+                        Recommendation
+                    </label>
+                    <select id="recommendation" name="recommendation"
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm form-input-focus py-2 px-3 border">
+                        <option value="" {% if not existing_feedback or not existing_feedback.recommendation %}selected{% endif %}>— Select recommendation —</option>
+                        <option value="strong_hire" {% if existing_feedback and existing_feedback.recommendation == 'strong_hire' %}selected{% endif %}>Strong Hire</option>
+                        <option value="hire" {% if existing_feedback and existing_feedback.recommendation == 'hire' %}selected{% endif %}>Hire</option>
+                        <option value="no_hire" {% if existing_feedback and existing_feedback.recommendation == 'no_hire' %}selected{% endif %}>No Hire</option>
+                        <option value="strong_no_hire" {% if existing_feedback and existing_feedback.recommendation == 'strong_no_hire' %}selected{% endif %}>Strong No Hire</option>
+                    </select>
+                    {% if errors and errors.recommendation %}
+                    <p class="mt-1 text-sm text-red-600">{{ errors.recommendation }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Feedback Text -->
+                <div>
+                    <label for="feedback_text" class="block text-sm font-medium text-gray-700 mb-1">
+                        Detailed Feedback <span class="text-red-500">*</span>
+                    </label>
+                    <textarea id="feedback_text" name="feedback_text" rows="6" required
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm form-input-focus py-2 px-3 border"
+                        placeholder="Provide a detailed assessment of the candidate's performance, communication skills, technical ability, and overall fit...">{{ existing_feedback.feedback_text if existing_feedback and existing_feedback.feedback_text else '' }}</textarea>
+                    <p class="mt-1 text-xs text-gray-400">Minimum 1 character, maximum 5000 characters.</p>
+                    {% if errors and errors.feedback_text %}
+                    <p class="mt-1 text-sm text-red-600">{{ errors.feedback_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Strengths -->
+                <div>
+                    <label for="strengths" class="block text-sm font-medium text-gray-700 mb-1">
+                        Strengths
+                    </label>
+                    <textarea id="strengths" name="strengths" rows="3"
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm form-input-focus py-2 px-3 border"
+                        placeholder="What were the candidate's key strengths during this interview?">{{ existing_feedback.strengths if existing_feedback and existing_feedback.strengths else '' }}</textarea>
+                    {% if errors and errors.strengths %}
+                    <p class="mt-1 text-sm text-red-600">{{ errors.strengths }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Weaknesses -->
+                <div>
+                    <label for="weaknesses" class="block text-sm font-medium text-gray-700 mb-1">
+                        Areas for Improvement
+                    </label>
+                    <textarea id="weaknesses" name="weaknesses" rows="3"
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm form-input-focus py-2 px-3 border"
+                        placeholder="What areas could the candidate improve on?">{{ existing_feedback.weaknesses if existing_feedback and existing_feedback.weaknesses else '' }}</textarea>
+                    {% if errors and errors.weaknesses %}
+                    <p class="mt-1 text-sm text-red-600">{{ errors.weaknesses }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <a href="/interviews" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-150">
+                        Cancel
+                    </a>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-150">
+                        <svg class="-ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        {% if existing_feedback %}Update Feedback{% else %}Submit Feedback{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if existing_feedback %}
+        <!-- Existing Feedback Summary -->
+        <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">Feedback previously submitted</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                        <p>You submitted feedback on {{ existing_feedback.created_at.strftime('%B %d, %Y at %I:%M %p') if existing_feedback.created_at else 'N/A' }}.
+                        {% if existing_feedback.updated_at and existing_feedback.updated_at != existing_feedback.created_at %}
+                        Last updated on {{ existing_feedback.updated_at.strftime('%B %d, %Y at %I:%M %p') }}.
+                        {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Visual enhancement: highlight selected rating
+        const ratingInputs = document.querySelectorAll('input[name="rating"]');
+        ratingInputs.forEach(function(input) {
+            input.addEventListener('change', function() {
+                ratingInputs.forEach(function(r) {
+                    const label = r.closest('label').querySelector('div');
+                    if (parseInt(r.value) <= parseInt(input.value)) {
+                        label.classList.add('border-primary-500', 'bg-primary-50', 'text-primary-700');
+                        label.classList.remove('border-gray-200', 'text-gray-400');
+                    } else {
+                        label.classList.remove('border-primary-500', 'bg-primary-50', 'text-primary-700');
+                        label.classList.add('border-gray-200', 'text-gray-400');
+                    }
+                });
+            });
+        });
+
+        // Trigger change on page load if a rating is already selected (pre-populated)
+        const checkedRating = document.querySelector('input[name="rating"]:checked');
+        if (checkedRating) {
+            checkedRating.dispatchEvent(new Event('change'));
+        }
+
+        // Character count for feedback_text
+        const feedbackText = document.getElementById('feedback_text');
+        if (feedbackText) {
+            const maxLength = 5000;
+            const counterEl = document.createElement('p');
+            counterEl.className = 'mt-1 text-xs text-gray-400';
+            counterEl.textContent = feedbackText.value.length + ' / ' + maxLength + ' characters';
+            feedbackText.parentNode.querySelector('p').after(counterEl);
+
+            feedbackText.addEventListener('input', function() {
+                const remaining = this.value.length;
+                counterEl.textContent = remaining + ' / ' + maxLength + ' characters';
+                if (remaining > maxLength) {
+                    counterEl.classList.add('text-red-500');
+                    counterEl.classList.remove('text-gray-400');
+                } else {
+                    counterEl.classList.remove('text-red-500');
+                    counterEl.classList.add('text-gray-400');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

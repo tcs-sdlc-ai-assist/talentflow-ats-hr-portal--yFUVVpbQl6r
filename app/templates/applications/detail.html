@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+
+{% block title %}Application Detail — TalentFlow ATS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <nav class="flex items-center space-x-2 text-sm text-gray-500">
+        <a href="/applications" class="hover:text-primary-600 transition-colors duration-150">Applications</a>
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+        <span class="text-gray-900 font-medium">{{ application.id[:8] }}…</span>
+    </nav>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Application Header -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Application Details</h1>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Applied on {{ application.applied_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    </p>
+                </div>
+                <div>
+                    {% set status = application.status %}
+                    {% if status == 'Applied' %}
+                    <span class="status-badge bg-blue-100 text-blue-800">{{ status }}</span>
+                    {% elif status == 'Screening' %}
+                    <span class="status-badge bg-purple-100 text-purple-800">{{ status }}</span>
+                    {% elif status == 'Interview' %}
+                    <span class="status-badge bg-yellow-100 text-yellow-800">{{ status }}</span>
+                    {% elif status == 'Assessment' %}
+                    <span class="status-badge bg-indigo-100 text-indigo-800">{{ status }}</span>
+                    {% elif status == 'Offer' %}
+                    <span class="status-badge bg-green-100 text-green-800">{{ status }}</span>
+                    {% elif status == 'Hired' %}
+                    <span class="status-badge bg-emerald-100 text-emerald-800">{{ status }}</span>
+                    {% elif status == 'Rejected' %}
+                    <span class="status-badge bg-red-100 text-red-800">{{ status }}</span>
+                    {% elif status == 'Withdrawn' %}
+                    <span class="status-badge bg-gray-100 text-gray-800">{{ status }}</span>
+                    {% else %}
+                    <span class="status-badge bg-gray-100 text-gray-600">{{ status }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Transition -->
+        {% if allowed_transitions and allowed_transitions|length > 0 %}
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Update Status</h2>
+            <form method="POST" action="/applications/{{ application.id }}/status" class="space-y-4">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Move to Stage</label>
+                        <select id="status" name="status" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 form-input-focus">
+                            {% for transition in allowed_transitions %}
+                            <option value="{{ transition }}">{{ transition }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                            <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5-4.5L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
+                            </svg>
+                            Update Status
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                    <textarea id="notes" name="notes" rows="2" class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 form-input-focus" placeholder="Add a note about this status change..."></textarea>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- Pipeline Progress -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Pipeline Progress</h2>
+            {% set stages = ['Applied', 'Screening', 'Interview', 'Assessment', 'Offer', 'Hired'] %}
+            {% set terminal_stages = ['Rejected', 'Withdrawn'] %}
+            {% if application.status in terminal_stages %}
+            <div class="mb-4 p-3 rounded-md {% if application.status == 'Rejected' %}bg-red-50 border border-red-200{% else %}bg-gray-50 border border-gray-200{% endif %}">
+                <p class="text-sm {% if application.status == 'Rejected' %}text-red-700{% else %}text-gray-700{% endif %} font-medium">
+                    This application has been <strong>{{ application.status|lower }}</strong>.
+                </p>
+            </div>
+            {% endif %}
+            <div class="flex items-center space-x-1 overflow-x-auto pb-2">
+                {% for stage in stages %}
+                {% set stage_index = loop.index0 %}
+                {% set current_index = stages.index(application.status) if application.status in stages else -1 %}
+                {% if application.status in stages and stage_index <= current_index %}
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-full {% if stage_index == current_index %}bg-primary-600 text-white{% else %}bg-green-500 text-white{% endif %} text-xs font-bold flex-shrink-0">
+                        {% if stage_index < current_index %}
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        {% else %}
+                        {{ stage_index + 1 }}
+                        {% endif %}
+                    </div>
+                    <span class="ml-1.5 text-xs font-medium {% if stage_index == current_index %}text-primary-700{% else %}text-green-700{% endif %} whitespace-nowrap">{{ stage }}</span>
+                </div>
+                {% else %}
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-xs font-bold flex-shrink-0">
+                        {{ stage_index + 1 }}
+                    </div>
+                    <span class="ml-1.5 text-xs font-medium text-gray-400 whitespace-nowrap">{{ stage }}</span>
+                </div>
+                {% endif %}
+                {% if not loop.last %}
+                <div class="flex-shrink-0 w-6 h-0.5 {% if application.status in stages and stage_index < current_index %}bg-green-400{% else %}bg-gray-200{% endif %}"></div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Cover Letter -->
+        {% if application.cover_letter %}
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-3">Cover Letter</h2>
+            <div class="prose prose-sm max-w-none text-gray-700">
+                <p class="whitespace-pre-wrap">{{ application.cover_letter }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Notes -->
+        {% if application.notes %}
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-3">Notes</h2>
+            <div class="prose prose-sm max-w-none text-gray-700">
+                <p class="whitespace-pre-wrap">{{ application.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Interviews Section -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Interviews</h2>
+                {% if application.status not in ['Hired', 'Rejected', 'Withdrawn'] %}
+                <a href="/interviews/new?application_id={{ application.id }}" class="inline-flex items-center px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors duration-150">
+                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Schedule Interview
+                </a>
+                {% endif %}
+            </div>
+
+            {% if interviews and interviews|length > 0 %}
+            <div class="timeline space-y-0">
+                {% for interview in interviews %}
+                <div class="timeline-item {% if interview.status == 'completed' %}completed{% elif interview.status == 'scheduled' %}upcoming{% else %}current{% endif %}">
+                    <div class="ml-2 bg-gray-50 rounded-lg p-4 border border-gray-100">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">
+                                    {{ interview.interview_type|replace('_', ' ')|title }}
+                                </h3>
+                                <p class="text-xs text-gray-500 mt-0.5">
+                                    {{ interview.scheduled_at.strftime('%B %d, %Y at %I:%M %p') }}
+                                    · {{ interview.duration_minutes }} min
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                {% if interview.status == 'scheduled' %}
+                                <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">Scheduled</span>
+                                {% elif interview.status == 'completed' %}
+                                <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Completed</span>
+                                {% elif interview.status == 'cancelled' %}
+                                <span class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">Cancelled</span>
+                                {% else %}
+                                <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700">{{ interview.status|title }}</span>
+                                {% endif %}
+                                <a href="/interviews/{{ interview.id }}" class="text-primary-600 hover:text-primary-700 text-xs font-medium">View</a>
+                            </div>
+                        </div>
+
+                        {% if interview.location %}
+                        <p class="text-xs text-gray-500 mt-2">
+                            <svg class="inline h-3.5 w-3.5 mr-0.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                            </svg>
+                            {{ interview.location }}
+                        </p>
+                        {% endif %}
+
+                        {% if interview.notes %}
+                        <p class="text-xs text-gray-600 mt-2 italic">{{ interview.notes }}</p>
+                        {% endif %}
+
+                        <!-- Interview Feedback -->
+                        {% if interview.feedback %}
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <h4 class="text-xs font-semibold text-gray-700 mb-2">Feedback</h4>
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="star-rating">
+                                    {% for i in range(1, 6) %}
+                                    <svg class="h-4 w-4 star {% if i <= interview.feedback.rating %}filled{% endif %}" fill="{% if i <= interview.feedback.rating %}currentColor{% else %}none{% endif %}" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+                                    </svg>
+                                    {% endfor %}
+                                </div>
+                                <span class="text-xs text-gray-500">{{ interview.feedback.rating }}/5</span>
+                                {% if interview.feedback.recommendation %}
+                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                                    {% if interview.feedback.recommendation == 'strong_hire' %}bg-green-100 text-green-800
+                                    {% elif interview.feedback.recommendation == 'hire' %}bg-emerald-50 text-emerald-700
+                                    {% elif interview.feedback.recommendation == 'no_hire' %}bg-orange-50 text-orange-700
+                                    {% elif interview.feedback.recommendation == 'strong_no_hire' %}bg-red-100 text-red-800
+                                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                    {{ interview.feedback.recommendation|replace('_', ' ')|title }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-xs text-gray-700 whitespace-pre-wrap">{{ interview.feedback.feedback_text }}</p>
+                            {% if interview.feedback.strengths %}
+                            <div class="mt-2">
+                                <span class="text-xs font-medium text-green-700">Strengths:</span>
+                                <p class="text-xs text-gray-600 whitespace-pre-wrap">{{ interview.feedback.strengths }}</p>
+                            </div>
+                            {% endif %}
+                            {% if interview.feedback.weaknesses %}
+                            <div class="mt-1">
+                                <span class="text-xs font-medium text-red-700">Areas for Improvement:</span>
+                                <p class="text-xs text-gray-600 whitespace-pre-wrap">{{ interview.feedback.weaknesses }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% elif interview.status == 'completed' %}
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <p class="text-xs text-gray-400 italic">No feedback submitted yet.</p>
+                            <a href="/interviews/{{ interview.id }}/feedback" class="text-xs text-primary-600 hover:text-primary-700 font-medium">Submit Feedback</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                </svg>
+                <p class="mt-2 text-sm text-gray-500">No interviews scheduled yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+        <!-- Candidate Info -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Candidate</h2>
+            {% if candidate %}
+            <div class="flex items-center gap-3 mb-4">
+                <div class="avatar avatar-md bg-primary-100 text-primary-700">
+                    {{ candidate.first_name[0] }}{{ candidate.last_name[0] }}
+                </div>
+                <div>
+                    <a href="/candidates/{{ candidate.id }}" class="text-sm font-semibold text-gray-900 hover:text-primary-600 transition-colors duration-150">
+                        {{ candidate.first_name }} {{ candidate.last_name }}
+                    </a>
+                    {% if candidate.headline %}
+                    <p class="text-xs text-gray-500">{{ candidate.headline }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <dl class="space-y-2 text-sm">
+                <div class="flex items-start gap-2">
+                    <dt class="text-gray-400 flex-shrink-0">
+                        <svg class="h-4 w-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                        </svg>
+                    </dt>
+                    <dd class="text-gray-700 break-all">{{ candidate.email }}</dd>
+                </div>
+                {% if candidate.phone %}
+                <div class="flex items-start gap-2">
+                    <dt class="text-gray-400 flex-shrink-0">
+                        <svg class="h-4 w-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                        </svg>
+                    </dt>
+                    <dd class="text-gray-700">{{ candidate.phone }}</dd>
+                </div>
+                {% endif %}
+                {% if candidate.location %}
+                <div class="flex items-start gap-2">
+                    <dt class="text-gray-400 flex-shrink-0">
+                        <svg class="h-4 w-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                        </svg>
+                    </dt>
+                    <dd class="text-gray-700">{{ candidate.location }}</dd>
+                </div>
+                {% endif %}
+                {% if candidate.linkedin_url %}
+                <div class="flex items-start gap-2">
+                    <dt class="text-gray-400 flex-shrink-0">
+                        <svg class="h-4 w-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                        </svg>
+                    </dt>
+                    <dd><a href="{{ candidate.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:text-primary-700 text-xs">LinkedIn Profile</a></dd>
+                </div>
+                {% endif %}
+            </dl>
+            {% if candidate.skills and candidate.skills|length > 0 %}
+            <div class="mt-4 pt-3 border-t border-gray-100">
+                <h3 class="text-xs font-medium text-gray-500 mb-2">Skills</h3>
+                <div class="flex flex-wrap gap-1.5">
+                    {% for skill in candidate.skills %}
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+                        {{ skill.name }}
+                        {% if skill.years_of_experience %}
+                        <span class="ml-1 text-gray-400">{{ skill.years_of_experience }}y</span>
+                        {% endif %}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% else %}
+            <p class="text-sm text-gray-500 italic">Candidate information unavailable.</p>
+            {% endif %}
+        </div>
+
+        <!-- Job Info -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Job</h2>
+            {% if job %}
+            <div class="space-y-3">
+                <div>
+                    <a href="/jobs/{{ job.id }}" class="text-sm font-semibold text-gray-900 hover:text-primary-600 transition-colors duration-150">
+                        {{ job.title }}
+                    </a>
+                    {% if job.department %}
+                    <p class="text-xs text-gray-500 mt-0.5">{{ job.department }}</p>
+                    {% endif %}
+                </div>
+                <dl class="space-y-2 text-sm">
+                    {% if job.location %}
+                    <div class="flex items-start gap-2">
+                        <dt class="text-gray-400 flex-shrink-0">
+                            <svg class="h-4 w-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                            </svg>
+                        </dt>
+                        <dd class="text-gray-700">{{ job.location }}{% if job.is_remote %} <span class="text-xs text-green-600">(Remote)</span>{% endif %}</dd>
+                    </div>
+                    {% endif %}
+                    {% if job.job_type %}
+                    <div class="flex items-start gap-2">
+                        <dt class="text-gray-400 flex-shrink-0">
+                            <svg class="h-4 w-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
+                            </svg>
+                        </dt>
+                        <dd class="text-gray-700">{{ job.job_type }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if job.experience_level %}
+                    <div class="flex items-start gap-2">
+                        <dt class="text-gray-400 flex-shrink-0">
+                            <svg class="h-4 w-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                            </svg>
+                        </dt>
+                        <dd class="text-gray-700">{{ job.experience_level }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if job.salary_min or job.salary_max %}
+                    <div class="flex items-start gap-2">
+                        <dt class="text-gray-400 flex-shrink-0">
+                            <svg class="h-4 w-4 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                        </dt>
+                        <dd class="text-gray-700">
+                            {% if job.salary_min and job.salary_max %}
+                            {{ job.salary_currency|default('USD') }} {{ '{:,.0f}'.format(job.salary_min) }} – {{ '{:,.0f}'.format(job.salary_max) }}
+                            {% elif job.salary_min %}
+                            From {{ job.salary_currency|default('USD') }} {{ '{:,.0f}'.format(job.salary_min) }}
+                            {% elif job.salary_max %}
+                            Up to {{ job.salary_currency|default('USD') }} {{ '{:,.0f}'.format(job.salary_max) }}
+                            {% endif %}
+                        </dd>
+                    </div>
+                    {% endif %}
+                </dl>
+                <div class="pt-2">
+                    {% if job.status == 'Open' %}
+                    <span class="status-badge status-badge-open">{{ job.status }}</span>
+                    {% elif job.status == 'Closed' %}
+                    <span class="status-badge status-badge-closed">{{ job.status }}</span>
+                    {% elif job.status == 'Draft' %}
+                    <span class="status-badge status-badge-draft">{{ job.status }}</span>
+                    {% elif job.status == 'On Hold' %}
+                    <span class="status-badge status-badge-paused">{{ job.status }}</span>
+                    {% else %}
+                    <span class="status-badge bg-gray-100 text-gray-600">{{ job.status }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-500 italic">Job information unavailable.</p>
+            {% endif %}
+        </div>
+
+        <!-- Application Meta -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Details</h2>
+            <dl class="space-y-3 text-sm">
+                <div>
+                    <dt class="text-gray-500 text-xs">Application ID</dt>
+                    <dd class="text-gray-900 font-mono text-xs mt-0.5">{{ application.id }}</dd>
+                </div>
+                {% if application.source %}
+                <div>
+                    <dt class="text-gray-500 text-xs">Source</dt>
+                    <dd class="text-gray-900 mt-0.5">{{ application.source }}</dd>
+                </div>
+                {% endif %}
+                {% if application.resume_url %}
+                <div>
+                    <dt class="text-gray-500 text-xs">Resume</dt>
+                    <dd class="mt-0.5">
+                        <a href="{{ application.resume_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-primary-600 hover:text-primary-700 text-xs font-medium">
+                            <svg class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                            </svg>
+                            View Resume
+                        </a>
+                    </dd>
+                </div>
+                {% endif %}
+                <div>
+                    <dt class="text-gray-500 text-xs">Applied</dt>
+                    <dd class="text-gray-900 mt-0.5">{{ application.applied_at.strftime('%b %d, %Y') }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500 text-xs">Last Updated</dt>
+                    <dd class="text-gray-900 mt-0.5">{{ application.updated_at.strftime('%b %d, %Y at %I:%M %p') }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <h2 class="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Actions</h2>
+            <div class="space-y-2">
+                <a href="/applications" class="flex items-center gap-2 text-sm text-gray-600 hover:text-primary-600 transition-colors duration-150 py-1">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+                    </svg>
+                    Back to Applications
+                </a>
+                {% if candidate %}
+                <a href="/candidates/{{ candidate.id }}" class="flex items-center gap-2 text-sm text-gray-600 hover:text-primary-600 transition-colors duration-150 py-1">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                    </svg>
+                    View Candidate Profile
+                </a>
+                {% endif %}
+                {% if job %}
+                <a href="/jobs/{{ job.id }}" class="flex items-center gap-2 text-sm text-gray-600 hover:text-primary-600 transition-colors duration-150 py-1">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
+                    </svg>
+                    View Job Posting
+                </a>
+                {% endif %}
+                {% if application.status not in ['Hired', 'Rejected', 'Withdrawn'] %}
+                <a href="/interviews/new?application_id={{ application.id }}" class="flex items-center gap-2 text-sm text-gray-600 hover:text-primary-600 transition-colors duration-150 py-1">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                    </svg>
+                    Schedule Interview
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

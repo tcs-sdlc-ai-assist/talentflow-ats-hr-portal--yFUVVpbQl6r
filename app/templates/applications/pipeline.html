@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Application Pipeline — TalentFlow ATS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Application Pipeline</h1>
+            <p class="mt-1 text-sm text-gray-500">Track and manage candidates through the hiring process</p>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if job %}
+            <span class="inline-flex items-center rounded-full bg-primary-50 px-3 py-1 text-sm font-medium text-primary-700">
+                {{ job.title }}
+            </span>
+            {% endif %}
+            <a href="/applications" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-150">
+                <svg class="h-4 w-4 mr-1.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                </svg>
+                List View
+            </a>
+        </div>
+    </div>
+
+    {% if job_filter_options and job_filter_options|length > 0 %}
+    <div class="mt-4">
+        <form method="GET" action="/applications/pipeline" class="flex flex-wrap items-center gap-3">
+            <label for="job_id" class="text-sm font-medium text-gray-700">Filter by Job:</label>
+            <select name="job_id" id="job_id" onchange="this.form.submit()" class="block w-64 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm form-input-focus">
+                <option value="">All Jobs</option>
+                {% for opt in job_filter_options %}
+                <option value="{{ opt.id }}" {% if selected_job_id == opt.id %}selected{% endif %}>{{ opt.title }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<div class="kanban-board custom-scrollbar">
+    {% set stages = [
+        {"key": "Applied", "css": "stage-applied", "icon_color": "text-blue-500"},
+        {"key": "Screening", "css": "stage-screening", "icon_color": "text-purple-500"},
+        {"key": "Interview", "css": "stage-interview", "icon_color": "text-yellow-600"},
+        {"key": "Offer", "css": "stage-offer", "icon_color": "text-emerald-500"},
+        {"key": "Hired", "css": "stage-hired", "icon_color": "text-green-600"},
+        {"key": "Rejected", "css": "stage-rejected", "icon_color": "text-red-500"}
+    ] %}
+
+    {% for stage in stages %}
+    {% set stage_apps = pipeline.get(stage.key, []) if pipeline else [] %}
+    <div class="kanban-column {{ stage.css }}">
+        <div class="kanban-column-header">
+            <span>{{ stage.key }}</span>
+            <span class="count-badge">{{ stage_apps|length }}</span>
+        </div>
+        <div class="kanban-column-body">
+            {% if stage_apps|length == 0 %}
+            <div class="flex flex-col items-center justify-center py-8 text-center">
+                <svg class="h-8 w-8 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H6.911a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661Z" />
+                </svg>
+                <p class="text-xs text-gray-400">No applications</p>
+            </div>
+            {% else %}
+            {% for app in stage_apps %}
+            <div class="kanban-card" id="app-{{ app.id }}">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1 min-w-0">
+                        <div class="card-title truncate">
+                            {{ app.candidate_name if app.candidate_name else "Unknown Candidate" }}
+                        </div>
+                        <div class="card-subtitle truncate">
+                            {{ app.job_title if app.job_title else "Unknown Position" }}
+                        </div>
+                    </div>
+                    <div class="relative flex-shrink-0" x-data="{ open: false }">
+                        <button onclick="toggleDropdown('dropdown-{{ app.id }}')" type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary-500" aria-label="Change status">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z" />
+                            </svg>
+                        </button>
+                        <div id="dropdown-{{ app.id }}" class="hidden absolute right-0 top-8 z-30 w-44 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 py-1">
+                            <div class="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Move to</div>
+                            {% set transitions = {
+                                "Applied": ["Screening", "Rejected", "Withdrawn"],
+                                "Screening": ["Interview", "Rejected", "Withdrawn"],
+                                "Interview": ["Assessment", "Offer", "Rejected", "Withdrawn"],
+                                "Assessment": ["Interview", "Offer", "Rejected", "Withdrawn"],
+                                "Offer": ["Hired", "Rejected", "Withdrawn"],
+                                "Hired": [],
+                                "Rejected": [],
+                                "Withdrawn": []
+                            } %}
+                            {% set allowed = transitions.get(stage.key, []) %}
+                            {% if allowed|length == 0 %}
+                            <div class="px-3 py-2 text-xs text-gray-400 italic">No transitions available</div>
+                            {% else %}
+                            {% for target in allowed %}
+                            <form method="POST" action="/applications/{{ app.id }}/status" class="block">
+                                <input type="hidden" name="status" value="{{ target }}">
+                                <button type="submit" class="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-100 flex items-center gap-2">
+                                    {% if target == "Screening" %}
+                                    <span class="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0"></span>
+                                    {% elif target == "Interview" %}
+                                    <span class="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0"></span>
+                                    {% elif target == "Assessment" %}
+                                    <span class="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0"></span>
+                                    {% elif target == "Offer" %}
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                                    {% elif target == "Hired" %}
+                                    <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span>
+                                    {% elif target == "Rejected" %}
+                                    <span class="w-2 h-2 rounded-full bg-red-400 flex-shrink-0"></span>
+                                    {% elif target == "Withdrawn" %}
+                                    <span class="w-2 h-2 rounded-full bg-gray-400 flex-shrink-0"></span>
+                                    {% else %}
+                                    <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span>
+                                    {% endif %}
+                                    {{ target }}
+                                </button>
+                            </form>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-2 card-meta flex-wrap">
+                    {% if app.source %}
+                    <span class="inline-flex items-center gap-1">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                        </svg>
+                        {{ app.source }}
+                    </span>
+                    {% endif %}
+                    {% if app.applied_at %}
+                    <span class="inline-flex items-center gap-1">
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                        </svg>
+                        {{ app.applied_at.strftime('%b %d') if app.applied_at else '' }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="mt-2 flex items-center justify-end">
+                    <a href="/applications/{{ app.id }}" class="text-xs text-primary-600 hover:text-primary-800 font-medium transition-colors duration-150">
+                        View Details →
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not pipeline or (pipeline.values()|list|sum(start=[]))|length == 0 %}
+<div class="mt-8 text-center py-12">
+    <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12H9.75m3 0h.008v.008H12.75V15Zm0 3H9.75m3 0h.008v.008H12.75V18Zm-6-6h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18ZM6.75 7.5h3.75m-3.75 3h3.75m-3.75 3h3.75" />
+    </svg>
+    <h3 class="mt-2 text-sm font-semibold text-gray-900">No applications found</h3>
+    <p class="mt-1 text-sm text-gray-500">
+        {% if selected_job_id %}
+        No applications exist for this job yet.
+        {% else %}
+        Get started by creating a new application.
+        {% endif %}
+    </p>
+    <div class="mt-6">
+        <a href="/applications/new" class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 transition-colors duration-150">
+            <svg class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            New Application
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleDropdown(dropdownId) {
+        var allDropdowns = document.querySelectorAll('[id^="dropdown-"]');
+        allDropdowns.forEach(function(dd) {
+            if (dd.id !== dropdownId) {
+                dd.classList.add('hidden');
+            }
+        });
+
+        var dropdown = document.getElementById(dropdownId);
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+        }
+    }
+
+    document.addEventListener('click', function(event) {
+        var isDropdownButton = event.target.closest('button[onclick^="toggleDropdown"]');
+        if (!isDropdownButton) {
+            var allDropdowns = document.querySelectorAll('[id^="dropdown-"]');
+            allDropdowns.forEach(function(dd) {
+                dd.classList.add('hidden');
+            });
+        }
+    });
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            var allDropdowns = document.querySelectorAll('[id^="dropdown-"]');
+            allDropdowns.forEach(function(dd) {
+                dd.classList.add('hidden');
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit Job" if job else "Create Job" }} — TalentFlow ATS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="/jobs" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-primary-600 transition-colors duration-150">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                    Jobs
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-3 h-3 text-gray-400 mx-1" fill="none" viewBox="0 0 6 10">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                    </svg>
+                    <span class="ml-1 text-sm font-medium text-gray-700 md:ml-2">{{ "Edit Job" if job else "Create Job" }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<div class="bg-white shadow-sm rounded-lg border border-gray-200">
+    <div class="px-6 py-5 border-b border-gray-200">
+        <h1 class="text-xl font-semibold text-gray-900">
+            {% if job %}
+                Edit Job: {{ job.title }}
+            {% else %}
+                Create New Job
+            {% endif %}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500">
+            {% if job %}
+                Update the job posting details below.
+            {% else %}
+                Fill in the details below to create a new job posting.
+            {% endif %}
+        </p>
+    </div>
+
+    <form method="POST" action="{{ '/jobs/' ~ job.id ~ '/edit' if job else '/jobs/create' }}" class="px-6 py-6 space-y-8">
+        <!-- Basic Information -->
+        <div>
+            <h2 class="text-base font-semibold text-gray-900 mb-4">Basic Information</h2>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <!-- Title -->
+                <div class="sm:col-span-2">
+                    <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
+                        Job Title <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        name="title"
+                        id="title"
+                        required
+                        maxlength="200"
+                        value="{{ job.title if job else '' }}"
+                        placeholder="e.g. Senior Software Engineer"
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >
+                </div>
+
+                <!-- Department -->
+                <div>
+                    <label for="department" class="block text-sm font-medium text-gray-700 mb-1">
+                        Department
+                    </label>
+                    <input
+                        type="text"
+                        name="department"
+                        id="department"
+                        maxlength="100"
+                        value="{{ job.department if job and job.department else '' }}"
+                        placeholder="e.g. Engineering"
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >
+                </div>
+
+                <!-- Location -->
+                <div>
+                    <label for="location" class="block text-sm font-medium text-gray-700 mb-1">
+                        Location
+                    </label>
+                    <input
+                        type="text"
+                        name="location"
+                        id="location"
+                        maxlength="200"
+                        value="{{ job.location if job and job.location else '' }}"
+                        placeholder="e.g. San Francisco, CA"
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >
+                </div>
+
+                <!-- Job Type -->
+                <div>
+                    <label for="job_type" class="block text-sm font-medium text-gray-700 mb-1">
+                        Job Type
+                    </label>
+                    <select
+                        name="job_type"
+                        id="job_type"
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >
+                        <option value="">Select type...</option>
+                        {% set job_types = ["Full-Time", "Part-Time", "Contract", "Internship", "Temporary"] %}
+                        {% for jt in job_types %}
+                        <option value="{{ jt }}" {% if job and job.job_type == jt %}selected{% endif %}>{{ jt }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Experience Level -->
+                <div>
+                    <label for="experience_level" class="block text-sm font-medium text-gray-700 mb-1">
+                        Experience Level
+                    </label>
+                    <select
+                        name="experience_level"
+                        id="experience_level"
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >
+                        <option value="">Select level...</option>
+                        {% set experience_levels = ["Entry", "Mid", "Senior", "Lead", "Executive"] %}
+                        {% for el in experience_levels %}
+                        <option value="{{ el }}" {% if job and job.experience_level == el %}selected{% endif %}>{{ el }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Remote -->
+                <div class="flex items-center pt-6">
+                    <input
+                        type="checkbox"
+                        name="is_remote"
+                        id="is_remote"
+                        value="true"
+                        {% if job and job.is_remote %}checked{% endif %}
+                        class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    >
+                    <label for="is_remote" class="ml-2 block text-sm text-gray-700">
+                        This is a remote position
+                    </label>
+                </div>
+
+                <!-- Openings -->
+                <div>
+                    <label for="openings" class="block text-sm font-medium text-gray-700 mb-1">
+                        Number of Openings
+                    </label>
+                    <input
+                        type="number"
+                        name="openings"
+                        id="openings"
+                        min="1"
+                        value="{{ job.openings if job else '1' }}"
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <!-- Compensation -->
+        <div>
+            <h2 class="text-base font-semibold text-gray-900 mb-4">Compensation</h2>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <!-- Salary Min -->
+                <div>
+                    <label for="salary_min" class="block text-sm font-medium text-gray-700 mb-1">
+                        Minimum Salary
+                    </label>
+                    <div class="relative">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span class="text-gray-500 text-sm">$</span>
+                        </div>
+                        <input
+                            type="number"
+                            name="salary_min"
+                            id="salary_min"
+                            min="0"
+                            step="1000"
+                            value="{{ job.salary_min | int if job and job.salary_min else '' }}"
+                            placeholder="0"
+                            class="form-input-focus block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                        >
+                    </div>
+                </div>
+
+                <!-- Salary Max -->
+                <div>
+                    <label for="salary_max" class="block text-sm font-medium text-gray-700 mb-1">
+                        Maximum Salary
+                    </label>
+                    <div class="relative">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span class="text-gray-500 text-sm">$</span>
+                        </div>
+                        <input
+                            type="number"
+                            name="salary_max"
+                            id="salary_max"
+                            min="0"
+                            step="1000"
+                            value="{{ job.salary_max | int if job and job.salary_max else '' }}"
+                            placeholder="0"
+                            class="form-input-focus block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                        >
+                    </div>
+                </div>
+
+                <!-- Salary Currency -->
+                <div>
+                    <label for="salary_currency" class="block text-sm font-medium text-gray-700 mb-1">
+                        Currency
+                    </label>
+                    <select
+                        name="salary_currency"
+                        id="salary_currency"
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >
+                        {% set currencies = ["USD", "EUR", "GBP", "CAD", "AUD", "INR", "JPY", "CHF"] %}
+                        {% for cur in currencies %}
+                        <option value="{{ cur }}" {% if (job and job.salary_currency == cur) or (not job and cur == "USD") %}selected{% endif %}>{{ cur }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Details -->
+        <div>
+            <h2 class="text-base font-semibold text-gray-900 mb-4">Job Details</h2>
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Description -->
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                    </label>
+                    <textarea
+                        name="description"
+                        id="description"
+                        rows="5"
+                        placeholder="Provide a detailed description of the role..."
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >{{ job.description if job and job.description else '' }}</textarea>
+                </div>
+
+                <!-- Requirements -->
+                <div>
+                    <label for="requirements" class="block text-sm font-medium text-gray-700 mb-1">
+                        Requirements
+                    </label>
+                    <textarea
+                        name="requirements"
+                        id="requirements"
+                        rows="4"
+                        placeholder="List the qualifications and skills required..."
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >{{ job.requirements if job and job.requirements else '' }}</textarea>
+                </div>
+
+                <!-- Responsibilities -->
+                <div>
+                    <label for="responsibilities" class="block text-sm font-medium text-gray-700 mb-1">
+                        Responsibilities
+                    </label>
+                    <textarea
+                        name="responsibilities"
+                        id="responsibilities"
+                        rows="4"
+                        placeholder="Describe the key responsibilities of this role..."
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >{{ job.responsibilities if job and job.responsibilities else '' }}</textarea>
+                </div>
+
+                <!-- Benefits -->
+                <div>
+                    <label for="benefits" class="block text-sm font-medium text-gray-700 mb-1">
+                        Benefits
+                    </label>
+                    <textarea
+                        name="benefits"
+                        id="benefits"
+                        rows="3"
+                        placeholder="Describe the benefits and perks offered..."
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >{{ job.benefits if job and job.benefits else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status & Assignment -->
+        <div>
+            <h2 class="text-base font-semibold text-gray-900 mb-4">Status &amp; Assignment</h2>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <!-- Status -->
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                    </label>
+                    <select
+                        name="status"
+                        id="status"
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >
+                        {% set statuses = ["Draft", "Open", "On Hold", "Closed", "Cancelled"] %}
+                        {% for st in statuses %}
+                        <option value="{{ st }}" {% if (job and job.status == st) or (not job and st == "Draft") %}selected{% endif %}>{{ st }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Hiring Manager -->
+                <div>
+                    <label for="hiring_manager_id" class="block text-sm font-medium text-gray-700 mb-1">
+                        Hiring Manager
+                    </label>
+                    <select
+                        name="hiring_manager_id"
+                        id="hiring_manager_id"
+                        class="form-input-focus block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                    >
+                        <option value="">Select hiring manager...</option>
+                        {% if hiring_managers is defined and hiring_managers %}
+                            {% for manager in hiring_managers %}
+                            <option value="{{ manager.id }}" {% if job and job.created_by == manager.id %}selected{% endif %}>
+                                {{ manager.username }}{% if manager.role %} ({{ manager.role }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
+            <a
+                href="{{ '/jobs/' ~ job.id if job else '/jobs' }}"
+                class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors duration-150"
+            >
+                Cancel
+            </a>
+            <button
+                type="submit"
+                class="inline-flex items-center rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors duration-150"
+            >
+                {% if job %}
+                    <svg class="w-4 h-4 mr-1.5 -ml-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                    Update Job
+                {% else %}
+                    <svg class="w-4 h-4 mr-1.5 -ml-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Create Job
+                {% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var salaryMin = document.getElementById('salary_min');
+        var salaryMax = document.getElementById('salary_max');
+
+        function validateSalaryRange() {
+            if (salaryMin.value && salaryMax.value) {
+                var min = parseFloat(salaryMin.value);
+                var max = parseFloat(salaryMax.value);
+                if (max < min) {
+                    salaryMax.setCustomValidity('Maximum salary must be greater than or equal to minimum salary.');
+                } else {
+                    salaryMax.setCustomValidity('');
+                }
+            } else {
+                salaryMax.setCustomValidity('');
+            }
+        }
+
+        if (salaryMin && salaryMax) {
+            salaryMin.addEventListener('input', validateSalaryRange);
+            salaryMax.addEventListener('input', validateSalaryRange);
+        }
+    });
+</script>
+{% endblock %}
